@@ -1,40 +1,45 @@
 document.getElementById("peliculas").addEventListener("click", function () {
-    document.getElementById("contenido").hidden = false;
-    document.getElementById("form_new_actor").hidden = true;
-    fetch("http://localhost/apisakila/peliculas/all")
-        .then(response => response.json())
-        .then(data => {
-            let output = "<h2>Peliculas</h2>";
-            data.forEach(function (pelicula) {
-                output += `
-                <div>
-                    <h3>${pelicula.title}</h3>
-                    <p>${pelicula.description}</p>
-                </div>
-            `;
-            });
-            document.getElementById("contenido").innerHTML = output;
-        });
-});
+    const contenido = document.getElementById("contenido");
+    contenido.style.display = "block";
+    document.getElementById("form_new_actor").style.display = "none";
 
-document.getElementById("new_actor").addEventListener("click", function () {
-    document.getElementById("contenido").hidden = true;
-    document.getElementById("form_new_actor").hidden = false;
-});
+    // Limpiamos el contenido antes de cargar nuevas películas
+    contenido.innerHTML = "<h2>Cargando películas...</h2>";
 
-document.getElementById("save_actor").addEventListener("click", function () {
-    let first_name = document.getElementById("name").value;
-    let last_name = document.getElementById("last_name").value;
-    let formData = new FormData();
-    formData.append("name", first_name);
-    formData.append("lastname", last_name);
-
-    fetch("http://localhost/apisakila/actores/new", {
-        method: "POST",
-        body: formData
+    fetch("http://localhost/apisakila/peliculas/all", { // ✅ Corrección aquí
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJ0dS1hcGkuY29tIiwiYXVkIjoidHUtYXBpLmNvbSIsImlhdCI6MTczOTQ3MzAyNSwiZXhwIjoxNzM5NDc2NjI1LCJ1c2VyX2lkIjoxfQ.NxH2FCPBCKUSn9eP7bG6YHLSyT7pLwVHxb6uGXG8NIY"
+        }
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`Error en la respuesta: ${response.status}`);
+        }
+        return response.json();
+    })
     .then(data => {
-        console.log(data);
+        if (!Array.isArray(data) || data.length === 0) {
+            contenido.innerHTML = "<h2>No hay películas disponibles.</h2>";
+            return;
+        }
+
+        let output = "<h2>Películas</h2><div class='peliculas-container'>";
+        data.forEach(pelicula => {
+            output += `
+            <div class="pelicula">
+                <h3>${pelicula.title}</h3>
+                <p>${pelicula.description || "Sin descripción"}</p>
+            </div>`;
+        });
+        output += "</div>";
+
+        contenido.innerHTML = output;
+        contenido.scrollTop = 0; // Desplaza al inicio tras actualizar
+    })
+    .catch(error => {
+        contenido.innerHTML = `<h2>Error al cargar películas: ${error.message}</h2>`;
+        console.error(error);
     });
 });
